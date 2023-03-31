@@ -18,16 +18,23 @@ if ( ! class_exists('SlugSearcher')) :
     class SlugSearcher
     {
 
+        /**
+         * @var string
+         */
         var $version = '0.0.1';
 
+        /**
+         * @var string
+         */
         var $text_domain = 'slug-searcher';
-
-        var $settings = [];
 
         public function __construct()
         {
         }
 
+        /**
+         * @return void
+         */
         public function initialize()
         {
             // Define constants.
@@ -36,7 +43,7 @@ if ( ! class_exists('SlugSearcher')) :
             $this->define('SLUG_SEARCHER_VERSION', $this->version);
 
             // Include utility functions.
-            include_once(SLUG_SEARCHER_PATH . 'includes/utility-functions.php');
+            $this->slug_searcher_include('includes/utility-functions.php');
 
             // Include admin.
             if (is_admin()) {}
@@ -47,17 +54,23 @@ if ( ! class_exists('SlugSearcher')) :
             add_filter('posts_search', [$this, 'search_by_slug'], 10, 2);
         }
 
+        /**
+         * @param $search
+         * @param $wp_query
+         *
+         * @return mixed|string
+         */
         public function search_by_slug($search, $wp_query)
         {
-            if ( ! $wp_query->is_admin || ! $wp_query->is_search() || !array_key_exists('search_terms', $wp_query->query_vars)) return $search;
+            if ( ! $wp_query->is_admin || ! $wp_query->is_search() || ! array_key_exists('search_terms', $wp_query->query_vars)) return $search;
 
             global $wpdb;
 
-            $search    = '';
-            $and = '';
+            $search = '';
+            $and    = '';
             foreach ($wp_query->query_vars['search_terms'] as $term) {
                 if ('slug:' !== mb_substr(trim($term), 0, 5)) {
-                    $like   = '%' . $wpdb->esc_like($term) . '%';
+                    $like = '%' . $wpdb->esc_like($term) . '%';
                     $search .= $wpdb->prepare("{$and}(($wpdb->posts.post_title LIKE %s) OR ($wpdb->posts.post_excerpt LIKE %s) OR ($wpdb->posts.post_content LIKE %s))",
                         $like, $like, $like);
                 } else {
@@ -67,7 +80,7 @@ if ( ! class_exists('SlugSearcher')) :
 
                     if (empty($slug)) continue;
 
-                    $like   = '%' . $wpdb->esc_like($slug) . '%';
+                    $like = '%' . $wpdb->esc_like($slug) . '%';
                     $search .= $wpdb->prepare("{$and}(($wpdb->posts.post_name LIKE %s))", $like);
                 }
                 $and = 'AND';
@@ -80,6 +93,12 @@ if ( ! class_exists('SlugSearcher')) :
             return $search;
         }
 
+        /**
+         * @param $name
+         * @param $value
+         *
+         * @return void
+         */
         private function define($name, $value = true)
         {
             if ( ! defined($name)) {
@@ -87,6 +106,23 @@ if ( ! class_exists('SlugSearcher')) :
             }
         }
 
+        /**
+         * @param string $version
+         *
+         * @return SlugSearcher
+         */
+        public function set_version($version)
+        {
+            $this->version = $version;
+
+            return $this;
+        }
+
+        /**
+         * @param $filename
+         *
+         * @return void
+         */
         private function slug_searcher_include($filename = '')
         {
             $file_path = SLUG_SEARCHER_PATH . ltrim($filename, '/');
