@@ -13,24 +13,21 @@ if ( ! defined('ABSPATH')) {
     exit;
 }
 
-if ( ! class_exists('SlugSearcher')) :
+if ( ! class_exists('Slug_Searcher')) :
 
-    class SlugSearcher
+    class Slug_Searcher
     {
+        /**
+         * @var string
+         */
+        public string $version = '0.0.1';
 
         /**
          * @var string
          */
-        var $version = '0.0.1';
+        public string $text_domain = 'slug-searcher';
 
-        /**
-         * @var string
-         */
-        var $text_domain = 'slug-searcher';
-
-        public function __construct()
-        {
-        }
+        public function __construct() {}
 
         /**
          * @return void
@@ -60,7 +57,7 @@ if ( ! class_exists('SlugSearcher')) :
          *
          * @return mixed|string
          */
-        public function search_by_slug($search, $wp_query)
+        public function search_by_slug(string $search, WP_Query $wp_query)
         {
             if ( ! $wp_query->is_admin || ! $wp_query->is_search() || ! array_key_exists('search_terms', $wp_query->query_vars)) return $search;
 
@@ -68,11 +65,14 @@ if ( ! class_exists('SlugSearcher')) :
 
             $search = '';
             $and    = '';
+
             foreach ($wp_query->query_vars['search_terms'] as $term) {
                 if ('slug:' !== mb_substr(trim($term), 0, 5)) {
                     $like = '%' . $wpdb->esc_like($term) . '%';
-                    $search .= $wpdb->prepare("{$and}(($wpdb->posts.post_title LIKE %s) OR ($wpdb->posts.post_excerpt LIKE %s) OR ($wpdb->posts.post_content LIKE %s))",
-                        $like, $like, $like);
+                    $search .= $wpdb->prepare(
+                        "{$and}(($wpdb->posts.post_title LIKE %s) OR ($wpdb->posts.post_excerpt LIKE %s) OR ($wpdb->posts.post_content LIKE %s))",
+                        $like, $like, $like
+                    );
                 } else {
                     $slug = mb_strtolower(
                         trim(mb_substr($term, 5))
@@ -81,8 +81,12 @@ if ( ! class_exists('SlugSearcher')) :
                     if (empty($slug)) continue;
 
                     $like = '%' . $wpdb->esc_like($slug) . '%';
-                    $search .= $wpdb->prepare("{$and}(($wpdb->posts.post_name LIKE %s))", $like);
+                    $search .= $wpdb->prepare(
+                        "{$and}(($wpdb->posts.post_name LIKE %s))",
+                        $like
+                    );
                 }
+
                 $and = 'AND';
             }
 
@@ -94,24 +98,11 @@ if ( ! class_exists('SlugSearcher')) :
         }
 
         /**
-         * @param $name
-         * @param $value
-         *
-         * @return void
-         */
-        private function define($name, $value = true)
-        {
-            if ( ! defined($name)) {
-                define($name, $value);
-            }
-        }
-
-        /**
          * @param string $version
          *
-         * @return SlugSearcher
+         * @return Slug_Searcher
          */
-        public function set_version($version)
+        public function set_version(string $version): Slug_Searcher
         {
             $this->version = $version;
 
@@ -119,16 +110,29 @@ if ( ! class_exists('SlugSearcher')) :
         }
 
         /**
-         * @param $filename
+         * @param string $filename
          *
          * @return void
          */
-        private function slug_searcher_include($filename = '')
+        private function slug_searcher_include(string $filename = '')
         {
             $file_path = SLUG_SEARCHER_PATH . ltrim($filename, '/');
 
             if (file_exists($file_path)) {
                 include_once($file_path);
+            }
+        }
+
+        /**
+         * @param string $name
+         * @param mixed $value
+         *
+         * @return void
+         */
+        private function define(string $name, $value = true)
+        {
+            if ( ! defined($name)) {
+                define($name, $value);
             }
         }
     }
@@ -138,7 +142,7 @@ if ( ! class_exists('SlugSearcher')) :
         global $slug_creator;
 
         if ( ! isset($slug_creator)) {
-            $slug_creator = new SlugSearcher();
+            $slug_creator = new Slug_Searcher();
             $slug_creator->initialize();
         }
 
